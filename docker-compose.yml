@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gy_postgres
+    environment:
+      POSTGRES_USER: gy
+      POSTGRES_PASSWORD: gy
+      POSTGRES_DB: gydb
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: gy_rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: gy_azurite
+    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
+    ports:
+      - "10000:10000"
