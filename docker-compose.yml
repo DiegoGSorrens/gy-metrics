@@ -3,11 +3,14 @@ services:
     image: postgres:16
     container_name: gy_postgres
     environment:
-      POSTGRES_USER: gy
-      POSTGRES_PASSWORD: gy
-      POSTGRES_DB: gydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gy
     ports:
       - "5432:5432"
+    volumes:
+      - gy_pg:/var/lib/postgresql/data
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -15,10 +18,50 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    restart: unless-stopped
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: gy_azurite
-    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
     ports:
       - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gy_backend
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/gy
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      AZURITE_BLOB_URL: http://azurite:10000
+    depends_on:
+      - postgres
+      - rabbitmq
+      - azurite
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: gy_worker
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/gy
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      AZURITE_BLOB_URL: http://azurite:10000
+    depends_on:
+      - postgres
+      - rabbitmq
+      - azurite
+    restart: unless-stopped
+
+volumes:
+  gy_pg:

@@ -1,0 +1,69 @@
+<div class="page">
+    <h1>Gy Metrics</h1>
+    <p class="muted">Dashboard Angular consumindo /metrics do backend.</p>
+
+    <form [formGroup]="form" (ngSubmit)="load()" class="card">
+      <div class="grid">
+        <label>
+          Metric ID
+          <input type="number" formControlName="metricId" />
+        </label>
+
+        <label>
+          Tipo
+          <select formControlName="type">
+            <option *ngFor="let t of types" [value]="t">{{ t }}</option>
+          </select>
+        </label>
+
+        <label>
+          Data Inicial
+          <input type="date" formControlName="dateInitial" />
+        </label>
+
+        <label>
+          Data Final
+          <input type="date" formControlName="finalDate" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="submit" [disabled]="loading || form.invalid">
+          {{ loading ? 'Carregando...' : 'Buscar' }}
+        </button>
+        <span class="error" *ngIf="error">{{ error }}</span>
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="header-row">
+        <h2>Resultado</h2>
+        <span class="muted" *ngIf="rows.length">Linhas: {{ rows.length }}</span>
+      </div>
+
+      <div class="empty" *ngIf="!loading && rows.length === 0 && !error">
+        Sem dados para exibir.
+      </div>
+
+      <div class="table-wrap" *ngIf="rows.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Data</th>
+              <th>Valor</th>
+              <th>Raw</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of rows; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>{{ r.date || r.day || '-' }}</td>
+              <td>{{ formatValue(r.value ?? r.total) }}</td>
+              <td class="mono">{{ r }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>

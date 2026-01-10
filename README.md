@@ -1,15 +1,13 @@
-# Teste GY
+# Gy Metrics
 
-Projeto composto por:
+Projeto full stack para processamento e agregação de métricas.
 
-- Backend (NestJS)
-- Worker (NestJS + RabbitMQ)
+## Stack
+- Node.js (NestJS)
 - PostgreSQL
-- Azure Blob (Azurite)
+- RabbitMQ
+- Docker / Docker Compose
 
-Fluxo:
-1. Upload de CSV
-2. Processamento assíncrono via Worker
-3. Armazenamento no banco
-4. Agregações e relatório Excel
- 
+## Como rodar o projeto
+```bash
+docker compose up --build
