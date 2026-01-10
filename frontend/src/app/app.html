@@ -1,69 +1,84 @@
 <div class="page">
-    <h1>Gy Metrics</h1>
-    <p class="muted">Dashboard Angular consumindo /metrics do backend.</p>
+  <h1>Gy Metrics</h1>
 
-    <form [formGroup]="form" (ngSubmit)="load()" class="card">
-      <div class="grid">
-        <label>
-          Metric ID
-          <input type="number" formControlName="metricId" />
-        </label>
+  <div class="card">
+    <h2>Upload de arquivo</h2>
+    <p class="muted">Envie um arquivo para processar e inserir métricas.</p>
 
-        <label>
-          Tipo
-          <select formControlName="type">
-            <option *ngFor="let t of types" [value]="t">{{ t }}</option>
-          </select>
-        </label>
+    <input type="file" (change)="onFileSelected($event)" />
 
-        <label>
-          Data Inicial
-          <input type="date" formControlName="dateInitial" />
-        </label>
+    <div class="actions" style="margin-top: 12px">
+      <button (click)="sendFile()" [disabled]="!selectedFile || uploading">
+        {{ uploading ? 'Enviando...' : 'Enviar' }}
+      </button>
 
-        <label>
-          Data Final
-          <input type="date" formControlName="finalDate" />
-        </label>
-      </div>
-
-      <div class="actions">
-        <button type="submit" [disabled]="loading || form.invalid">
-          {{ loading ? 'Carregando...' : 'Buscar' }}
-        </button>
-        <span class="error" *ngIf="error">{{ error }}</span>
-      </div>
-    </form>
-
-    <div class="card">
-      <div class="header-row">
-        <h2>Resultado</h2>
-        <span class="muted" *ngIf="rows.length">Linhas: {{ rows.length }}</span>
-      </div>
-
-      <div class="empty" *ngIf="!loading && rows.length === 0 && !error">
-        Sem dados para exibir.
-      </div>
-
-      <div class="table-wrap" *ngIf="rows.length > 0">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Data</th>
-              <th>Valor</th>
-              <th>Raw</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let r of rows; let i = index">
-              <td>{{ i + 1 }}</td>
-              <td>{{ r.date || r.day || '-' }}</td>
-              <td>{{ formatValue(r.value ?? r.total) }}</td>
-              <td class="mono">{{ r }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <span class="error" *ngIf="uploadError">{{ uploadError }}</span>
+      <span class="ok" *ngIf="uploadOk">{{ uploadOk }}</span>
     </div>
   </div>
+
+  <div class="card">
+    <div class="grid">
+      <label>
+        ID da 
+        <input type="number" [(ngModel)]="form.metricId" name="metricId" />
+      </label>
+
+      <label>
+        Tipo
+        <select [(ngModel)]="form.type" name="type">
+          <option *ngFor="let t of types" [ngValue]="t">{{ t }}</option>
+        </select>
+      </label>
+
+      <label>
+        Data Inicial
+        <input type="date" [(ngModel)]="form.dateInitial" name="dateInitial" />
+      </label>
+
+      <label>
+        Data Final
+        <input type="date" [(ngModel)]="form.finalDate" name="finalDate" />
+      </label>
+    </div>
+
+    <div class="actions">
+      <button (click)="getAggregations()">
+        {{ 'Buscar' }}
+      </button>
+      <span class="error" *ngIf="error">{{ error }}</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="header-row">
+      <h2>Relatório</h2>
+      <span class="muted" *ngIf="rows.length">Linhas: {{ rows.length }}</span>
+    </div>
+
+    <div class="empty" *ngIf="rows.length === 0 && !error">Sem dados para exibir.</div>
+
+    <div class="table-wrap" *ngIf="rows.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Período</th>
+            <th>Total</th>
+            <th>Média</th>
+            <th>Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of rows; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ r.period }}</td>
+            <td>{{ formatValue(r.total) }}</td>
+            <td>{{ formatValue(r.avg) }}</td>
+            <td>{{ r.count }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

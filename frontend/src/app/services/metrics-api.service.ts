@@ -1,8 +1,19 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { lastValueFrom, Observable } from 'rxjs';
 
 export type AggType = 'DAY' | 'MONTH' | 'YEAR';
+
+export type MetricsAggregationRow = {
+  period: string;
+  total: number;
+  avg: number;
+  count: number;
+};
+
+export type MetricsAggregationResponse =
+  | MetricsAggregationRow[]
+  | { data: MetricsAggregationRow[] };
 
 @Injectable({ providedIn: 'root' })
 export class MetricsApiService {
@@ -10,17 +21,29 @@ export class MetricsApiService {
 
   constructor(private http: HttpClient) {}
 
-  getAggregations(metricId: number, type: AggType, dateInitial: string, finalDate: string): Observable<any> {
+  async getAggregations(
+    metricId: number,
+    type: AggType,
+    dateInitial: string,
+    finalDate: string
+  ) {
     const params = new HttpParams()
       .set('metricId', String(metricId))
       .set('type', type)
       .set('dateInitial', dateInitial)
       .set('finalDate', finalDate);
-
-    return this.http.get(`${this.baseUrl}/metrics/aggregations`, { params });
+    return await lastValueFrom(
+       this.http.get<MetricsAggregationResponse>(`${this.baseUrl}/metrics/aggregations`, { params })
+    );
   }
 
   postReport(payload: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/metrics/report`, payload);
+  }
+
+  uploadFile(file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post(`${this.baseUrl}/upload`, form);
   }
 }

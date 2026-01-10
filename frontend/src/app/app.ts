@@ -1,52 +1,106 @@
-import { Component, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  inject,
+  NgZone,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MetricsApiService, AggType } from './services/metrics-api.service';
+import type { MetricsAggregationRow } from './services/metrics-api.service';
 
+import { FormsModule } from '@angular/forms';
+
+type FiltersForm = {
+  metricId: number;
+  type: AggType;
+  dateInitial: string;
+  finalDate: string;
+};
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule, ReactiveFormsModule],
+  imports: [RouterOutlet, CommonModule, FormsModule],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
-export class App {
+export class App implements OnInit, AfterViewInit {
   protected readonly title = signal('frontend');
 
-  private fb = inject(FormBuilder);
   private api = inject(MetricsApiService);
 
-  types: AggType[] = ['DAY','MONTH','YEAR'];
+  private cdr = inject(ChangeDetectorRef);
+
+  types: AggType[] = ['DAY', 'MONTH', 'YEAR'];
+
   loading = false;
   error = '';
-  rows: any[] = [];
+  rows: MetricsAggregationRow[] = [];
+  private zone = inject(NgZone);
 
-  form = this.fb.group({
-    metricId: [1, [Validators.required, Validators.min(1)]],
-    type: ['SUM' as AggType, Validators.required],
-    dateInitial: ['2025-01-01', Validators.required],
-    finalDate: ['2025-12-31', Validators.required],
-  });
+  form: FiltersForm = {
+    metricId: 218219,
+    type: 'DAY',
+    dateInitial: '2023-11-01',
+    finalDate: '2023-11-30',
+  };
 
-  load() {
-    if (this.form.invalid) return;
+  selectedFile: File | null = null;
+  uploading = false;
+  uploadError = '';
+  uploadOk = '';
 
-    const { metricId, type, dateInitial, finalDate } = this.form.getRawValue();
-    this.loading = true;
-    this.error = '';
-    this.rows = [];
+  async ngOnInit() {}
 
-    this.api.getAggregations(metricId!, type!, dateInitial!, finalDate!).subscribe({
-      next: (data) => {
-        const list = Array.isArray(data) ? data : (data?.data ?? []);
-        this.rows = Array.isArray(list) ? list : [];
-        this.loading = false;
+  ngAfterViewInit() {}
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.selectedFile = input.files?.[0] ?? null;
+    this.uploadError = '';
+    this.uploadOk = '';
+  }
+
+  sendFile() {
+    if (!this.selectedFile) return;
+
+    this.uploading = true;
+    this.uploadError = '';
+    this.uploadOk = '';
+
+    this.api.uploadFile(this.selectedFile).subscribe({
+      next: () => {
+        this.uploadOk = 'Arquivo enviado';
+        this.uploading = false;
       },
       error: (err) => {
-        this.error = err?.message || 'Erro ao buscar dados';
-        this.loading = false;
-      }
+        this.uploadError = err?.error?.message || err?.message || 'Erro no upload';
+        this.uploading = false;
+      },
     });
+  }
+
+  async getAggregations() {
+    try {
+      this.loading = true;
+      this.error = '';
+
+      const data = await this.api.getAggregations(
+        this.form.metricId,
+        this.form.type,
+        this.form.dateInitial,
+        this.form.finalDate
+      );
+
+      this.rows = Array.isArray(data) ? data : data.data ?? [];
+    } catch (err: any) {
+      this.error = err?.message || 'Erro';
+    } finally {
+      this.loading = false;
+      this.cdr.markForCheck();
+    }
   }
 
   formatValue(v: any) {
