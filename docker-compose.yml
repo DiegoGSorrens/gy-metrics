@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - gy_pg:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
     restart: unless-stopped
 
   rabbitmq:
@@ -47,6 +48,15 @@ services:
       - postgres
       - rabbitmq
       - azurite
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: gy_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
     restart: unless-stopped
 
   worker:

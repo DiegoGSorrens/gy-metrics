@@ -8,6 +8,11 @@ Projeto full stack para processamento e agregação de métricas.
 - RabbitMQ
 - Docker / Docker Compose
 
-## Como rodar o projeto
+## Pré-requisitos
+- Docker Desktop instalado (Windows/Mac) ou Docker + Docker Compose (Linux)
+
+## Subindo o projeto (modo padrão)
+Na raiz do repositório:
+
 ```bash
 docker compose up --build

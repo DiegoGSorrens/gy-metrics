@@ -37,13 +37,17 @@ export class MetricsApiService {
     );
   }
 
-  postReport(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/metrics/report`, payload);
-  }
+  postReport(payload: any) {
+  return this.http.post(`${this.baseUrl}/metrics/report`, payload, {
+    responseType: 'blob',
+  });
+}
+
 
   uploadFile(file: File) {
     const form = new FormData();
     form.append('file', file);
     return this.http.post(`${this.baseUrl}/upload`, form);
   }
+  
 }

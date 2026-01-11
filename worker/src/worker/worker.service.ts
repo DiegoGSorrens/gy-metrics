@@ -16,11 +16,10 @@ export class WorkerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // ---- Rabbit config ----
-    const rabbitUrl = this.config.get<string>('RABBITMQ_URL') || 'amqp://localhost';
+    const rabbitUrl =
+      this.config.get<string>('RABBITMQ_URL') || 'amqp://localhost';
     this.queue = this.config.get<string>('RABBITMQ_QUEUE') || 'file-uploads';
 
-    // ---- Azure/Azurite config ----
     const connStr = this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING');
     if (!connStr) {
       throw new Error('AZURE_STORAGE_CONNECTION_STRING não definido no .env');
@@ -29,12 +28,10 @@ export class WorkerService implements OnModuleInit {
     this.containerName = this.config.get<string>('AZURE_CONTAINER_NAME') || 'uploads';
     this.blobService = BlobServiceClient.fromConnectionString(connStr);
 
-    // ---- Rabbit connect ----
     const conn = await amqp.connect(rabbitUrl);
     const channel = await conn.createChannel();
     await channel.assertQueue(this.queue, { durable: true });
 
-    // processa 1 por vez (mais seguro pra início)
     channel.prefetch(1);
 
     console.log(`[worker] Consumindo fila: ${this.queue}`);
@@ -43,7 +40,6 @@ export class WorkerService implements OnModuleInit {
       if (!msg) return;
 
       try {
-        // 1) ler mensagem
         const content = msg.content.toString('utf-8');
         const { blobName } = JSON.parse(content);
 
@@ -51,7 +47,6 @@ export class WorkerService implements OnModuleInit {
 
         console.log(`[worker] Recebi blobName: ${blobName}`);
 
-        // 2) baixar do azurite
         const container = this.blobService.getContainerClient(this.containerName);
         const blob = container.getBlobClient(blobName);
 
@@ -61,7 +56,6 @@ export class WorkerService implements OnModuleInit {
         console.log(`[worker] Download OK (${buffer.length} bytes). Primeiros 120 chars:`);
         console.log(buffer.toString('utf-8').slice(0, 120));
 
-        // 3) parse CSV
         const text = buffer.toString('utf-8');
 
         const lines = text
@@ -69,10 +63,8 @@ export class WorkerService implements OnModuleInit {
           .map((l) => l.trim())
           .filter(Boolean);
 
-        // header
         const header = lines.shift();
 
-        // valida só colunas 1 e 3 (aceita dateTime/datetime)
         const headerCols = (header || '')
           .split(';')
           .map((s) => s.trim().toLowerCase());
@@ -101,7 +93,6 @@ export class WorkerService implements OnModuleInit {
           const metricId = Number(metricIdStr);
           const value = Number(valueStr);
 
-          // dateTime vem como "DD/MM/YYYY HH:mm"
           const [datePart, timePart] = dateTimeStr.split(' ');
           if (!datePart || !timePart) continue;
 
@@ -110,10 +101,8 @@ export class WorkerService implements OnModuleInit {
 
           if (!dd || !mm || !yyyy || HH === undefined || Min === undefined) continue;
 
-          // cria Date em horário local
           const dt = new Date(yyyy, mm - 1, dd, HH, Min, 0);
 
-          // metric_date em yyyy-mm-dd (string OK pro Postgres)
           const metricDate = `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
 
           rows.push({ metricId, metricDateTime: dt, metricDate, value });
@@ -127,7 +116,6 @@ export class WorkerService implements OnModuleInit {
           return;
         }
 
-        // 4) INSERT em batches (evita SQL gigante)
         const batchSize = 1000;
 
         for (let start = 0; start < rows.length; start += batchSize) {
@@ -152,12 +140,10 @@ export class WorkerService implements OnModuleInit {
 
         console.log(`[worker] Insert OK: ${rows.length} linhas`);
 
-        // 5) ack
         channel.ack(msg);
       } catch (err: any) {
         console.error('[worker] Erro processando mensagem:', err?.message || err);
 
-        // enquanto testa: NÃO requeue para não repetir infinito
         channel.nack(msg, false, false);
       }
     });

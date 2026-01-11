@@ -72,7 +72,8 @@ export class MetricsService {
 
     return result.rows.map((r: any) => ({
       type,
-      period: r.period instanceof Date ? r.period.toISOString() : String(r.period),
+      period:
+        r.period instanceof Date ? r.period.toISOString() : String(r.period),
       total: Number(r.total),
       avg: Number(r.avg),
       count: Number(r.count),
@@ -96,9 +97,24 @@ export class MetricsService {
     if (!dateInitial || !finalDate)
       throw new BadRequestException('dateInitial/finalDate obrigatórios');
 
-    const dayAgg = await this.queryAggregation(metricId, 'DAY', dateInitial, finalDate);
-    const monthAgg = await this.queryAggregation(metricId, 'MONTH', dateInitial, finalDate);
-    const yearAgg = await this.queryAggregation(metricId, 'YEAR', dateInitial, finalDate);
+    const dayAgg = await this.queryAggregation(
+      metricId,
+      'DAY',
+      dateInitial,
+      finalDate,
+    );
+    const monthAgg = await this.queryAggregation(
+      metricId,
+      'MONTH',
+      dateInitial,
+      finalDate,
+    );
+    const yearAgg = await this.queryAggregation(
+      metricId,
+      'YEAR',
+      dateInitial,
+      finalDate,
+    );
 
     const monthMap = new Map<string, number>();
     for (const m of monthAgg) {

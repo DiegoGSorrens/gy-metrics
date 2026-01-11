@@ -13,6 +13,7 @@ import { MetricsApiService, AggType } from './services/metrics-api.service';
 import type { MetricsAggregationRow } from './services/metrics-api.service';
 
 import { FormsModule } from '@angular/forms';
+import { lastValueFrom } from 'rxjs';
 
 type FiltersForm = {
   metricId: number;
@@ -99,6 +100,30 @@ export class App implements OnInit, AfterViewInit {
       this.error = err?.message || 'Erro';
     } finally {
       this.loading = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async downloadReport() {
+    try {
+      this.error = '';
+
+      const payload = {
+        metricId: this.form.metricId,
+        dateInitial: this.form.dateInitial,
+        finalDate: this.form.finalDate,
+      };
+
+      const blob = await lastValueFrom(this.api.postReport(payload));
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report_metric_${payload.metricId}_${payload.dateInitial}_to_${payload.finalDate}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      this.error = err?.error?.message || err?.message || 'Erro ao baixar relatório';
       this.cdr.markForCheck();
     }
   }

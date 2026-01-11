@@ -20,7 +20,7 @@
   <div class="card">
     <div class="grid">
       <label>
-        ID da 
+        ID da
         <input type="number" [(ngModel)]="form.metricId" name="metricId" />
       </label>
 
@@ -53,7 +53,10 @@
   <div class="card">
     <div class="header-row">
       <h2>Relatório</h2>
-      <span class="muted" *ngIf="rows.length">Linhas: {{ rows.length }}</span>
+
+        <button (click)="downloadReport()" [disabled]="loading" *ngIf="rows.length > 0">
+          Baixar Excel
+        </button>
     </div>
 
     <div class="empty" *ngIf="rows.length === 0 && !error">Sem dados para exibir.</div>
@@ -79,6 +82,10 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="footer-row" *ngIf="rows.length > 0">
+      <span class="muted">Linhas: {{ rows.length }}</span>
     </div>
   </div>
 </div>
