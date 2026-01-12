@@ -1,4 +1,4 @@
-# Projeto Full Stack – Teste Técnico
+# Gy Metrics
 
 Este projeto foi desenvolvido como parte de um teste técnico para demonstrar conhecimentos em backend, frontend, mensageria, processamento assíncrono e docker.
 
