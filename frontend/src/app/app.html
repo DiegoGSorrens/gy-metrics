@@ -8,8 +8,8 @@
     <input type="file" (change)="onFileSelected($event)" />
 
     <div class="actions" style="margin-top: 12px">
-      <button (click)="sendFile()" [disabled]="!selectedFile || uploading">
-        {{ uploading ? 'Enviando...' : 'Enviar' }}
+      <button (click)="sendFile()" [disabled]="!selectedFile">
+        {{ 'Enviar' }}
       </button>
 
       <span class="error" *ngIf="uploadError">{{ uploadError }}</span>

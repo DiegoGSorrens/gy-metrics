@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 import type { AggType } from '../domain/metric-aggregation.model';
 import type { Response } from 'express';
+import { ApiBody, ApiProduces, ApiResponse } from '@nestjs/swagger';
 
 @Controller('metrics')
 export class MetricsController {
@@ -33,6 +34,29 @@ export class MetricsController {
   }
 
   @Post('report')
+  @ApiProduces(
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @ApiResponse({
+    status: 201,
+    description: 'Arquivo XLSX',
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        metricId: { type: 'number', example: 218219 },
+        dateInitial: { type: 'string', example: '2023-11-01' },
+        finalDate: { type: 'string', example: '2023-11-30' },
+      },
+      required: ['metricId', 'dateInitial', 'finalDate'],
+    },
+  })
   async report(
     @Body() body: { metricId: number; dateInitial: string; finalDate: string },
     @Res() res: Response,

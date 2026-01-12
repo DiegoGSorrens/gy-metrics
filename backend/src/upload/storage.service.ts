@@ -19,18 +19,17 @@ export class StorageService {
   }
 
   async upload(file: Express.Multer.File): Promise<string> {
-    if (!file) throw new Error('Arquivo não foi enviado (field name deve ser "file")');
+    if (!file)
+      throw new Error('Arquivo não foi enviado (field name deve ser "file")');
 
     const containerClient = this.blobService.getContainerClient(
       this.containerName,
     );
     await containerClient.createIfNotExists();
 
-    // nome único para não colidir
     const blobName = `${uuid()}-${file.originalname}`;
     const blobClient = containerClient.getBlockBlobClient(blobName);
 
-    // file.buffer existe quando usamos memory storage (padrão do FileInterceptor)
     await blobClient.uploadData(file.buffer, {
       blobHTTPHeaders: { blobContentType: file.mimetype || 'text/csv' },
     });

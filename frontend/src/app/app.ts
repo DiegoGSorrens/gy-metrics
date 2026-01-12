@@ -66,19 +66,16 @@ export class App implements OnInit, AfterViewInit {
 
   sendFile() {
     if (!this.selectedFile) return;
-
-    this.uploading = true;
     this.uploadError = '';
     this.uploadOk = '';
 
     this.api.uploadFile(this.selectedFile).subscribe({
       next: () => {
         this.uploadOk = 'Arquivo enviado';
-        this.uploading = false;
+        window.location.reload();
       },
       error: (err) => {
         this.uploadError = err?.error?.message || err?.message || 'Erro no upload';
-        this.uploading = false;
       },
     });
   }

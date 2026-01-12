@@ -19,6 +19,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
   azurite:
@@ -45,9 +50,12 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AZURITE_BLOB_URL: http://azurite:10000
     depends_on:
-      - postgres
-      - rabbitmq
-      - azurite
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      azurite:
+        condition: service_started
     restart: unless-stopped
 
   frontend:
@@ -56,7 +64,8 @@ services:
     ports:
       - "4200:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     restart: unless-stopped
 
   worker:
@@ -72,9 +81,12 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AZURITE_BLOB_URL: http://azurite:10000
     depends_on:
-      - postgres
-      - rabbitmq
-      - azurite
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      azurite:
+        condition: service_started
     restart: unless-stopped
 
 volumes:

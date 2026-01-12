@@ -15,9 +15,29 @@ export class WorkerService implements OnModuleInit {
     private db: DbService,
   ) {}
 
+  private sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  private async connectRabbitWithRetry(url: string, retries = 30, delayMs = 2000) {
+    for (let i = 1; i <= retries; i++) {
+      try {
+        return await amqp.connect(url);
+      } catch (err) {
+        console.warn(
+          `[worker] RabbitMQ not ready (${i}/${retries}). Retrying in ${delayMs}ms...`,
+        );
+        await this.sleep(delayMs);
+      }
+    }
+    throw new Error('[worker] RabbitMQ unavailable after retries');
+  }
+
   async onModuleInit() {
     const rabbitUrl =
-      this.config.get<string>('RABBITMQ_URL') || 'amqp://localhost';
+      this.config.get<string>('RABBITMQ_URL') ||
+      'amqp://guest:guest@rabbitmq:5672';
+
     this.queue = this.config.get<string>('RABBITMQ_QUEUE') || 'file-uploads';
 
     const connStr = this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING');
@@ -25,10 +45,12 @@ export class WorkerService implements OnModuleInit {
       throw new Error('AZURE_STORAGE_CONNECTION_STRING não definido no .env');
     }
 
-    this.containerName = this.config.get<string>('AZURE_CONTAINER_NAME') || 'uploads';
+    this.containerName =
+      this.config.get<string>('AZURE_CONTAINER_NAME') || 'uploads';
+
     this.blobService = BlobServiceClient.fromConnectionString(connStr);
 
-    const conn = await amqp.connect(rabbitUrl);
+    const conn = await this.connectRabbitWithRetry(rabbitUrl);
     const channel = await conn.createChannel();
     await channel.assertQueue(this.queue, { durable: true });
 
@@ -52,9 +74,6 @@ export class WorkerService implements OnModuleInit {
 
         const downloadResp = await blob.download();
         const buffer = await this.streamToBuffer(downloadResp.readableStreamBody);
-
-        console.log(`[worker] Download OK (${buffer.length} bytes). Primeiros 120 chars:`);
-        console.log(buffer.toString('utf-8').slice(0, 120));
 
         const text = buffer.toString('utf-8');
 
@@ -143,7 +162,6 @@ export class WorkerService implements OnModuleInit {
         channel.ack(msg);
       } catch (err: any) {
         console.error('[worker] Erro processando mensagem:', err?.message || err);
-
         channel.nack(msg, false, false);
       }
     });
@@ -155,7 +173,9 @@ export class WorkerService implements OnModuleInit {
     if (!stream) return Buffer.from('');
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
-      stream.on('data', (d) => chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)));
+      stream.on('data', (d) =>
+        chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)),
+      );
       stream.on('end', () => resolve(Buffer.concat(chunks)));
       stream.on('error', reject);
     });
